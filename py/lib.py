@@ -18,9 +18,12 @@ its own corrections. You can keep your sterile truth for yourself."
   #elp("tiles display width",                    tiles     = 40),
   #elp("small effect size (Cliff's dela)",       cliff     = [0.147, 0.33, 0.474]),
   help("keep at most, say, 128 samples",          samples   = [128,256,128,512,1024]),
+  help("y-axis bins",                             bins      = [5,2,3,4,6,7,8,9,10]),
   help("in pretty print, round numbers",          round     = 3),
   help("random number seed",                      seed      = 61409389),
-  help("training data (arff format",              train     = "train.csv"),
+  help("ignore cells, cols characters",           ignore    = "?"),
+  help("class character",                         klass     = "!"),
+  help("training data (csv format)",              train     = "train.csv"),
   help("testing data (csv format)",               test      = "test.csv"),
   # --------------------------------------------------------------------
   # System
@@ -50,6 +53,9 @@ def options(before, after, *lst):
   return parser.parse_args()
 
 THE = options(*helps())
+
+def ro(x)        : return round(x,THE.round)
+def rseed(s=None): random.seed(s or THE.seed)
 
 #--------------------------------------------------
 

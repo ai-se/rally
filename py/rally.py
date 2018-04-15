@@ -5,7 +5,7 @@ from col import *
 
 def same(x): return x
 
-def rows(file):
+def csv(file):
   with open(file) as fs:
     for line in fs:
       line = re.sub(r'([\n\r\t]|#.*)', "", line)
@@ -15,29 +15,28 @@ def rows(file):
 
 def using(src, use = None):
   for row in src:
-    use = use or [i for i,x in enumerate(lst) 
-                  if x[0] == THE.ignore]
+    use = use or [i for i,x in enumerate(row) 
+                  if x[0] is not THE.ignore]
     yield [row[i] for i in use]
 
-def cols(src, names=None, stats=None):
+def meta(src, names=None, cols=None):
   for m,row in enumerate(using(src)):
     names = names or row
-    stats = stats or [None for _ in row]
+    col   = cols or [Col(i,name) for i,name in enumerate(names)]
     if m > 0:
-      for i,(name,stat,cell) in enumerate(zip(names,stats,row)):
-        if cell is not THE.ignore:
-          if cell==None:
-            what = Num if Num.isa(cell) else Sym
-            col  = cols[i] = what(name,i)
-        yield cols,row
+      print("names",names,"cols",cols,"row",row)
+      for col,cell in zip(cols,row):
+        col.add(cell)
+      yield cols,row
         
-def stats(src):
-  for cols,row in enumerate(cols(src)):
-    for col,cell in zip(cols,row):
-      col.add( col.fromString(cell) )
 
-for x in rows("../data/china.csv"):
-  print(x)
+def ranges(src):
+  for cols,row in meta(src):
+      yield cols,row, [ col.discretize(cell) 
+                         for col,cell in zip(cols,row)]
 
-run()
+
+for _,_,row in ranges(csv("../data/china.csv")):
+    print(row)
+
 

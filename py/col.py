@@ -1,7 +1,7 @@
 # /* vim: set tabstop=2 softtabstop=2 shiftwidth=2 expandtab : */
 from lib import *
 
-def gbin(n,bins,mean,sd) :
+def gbin(x,bins,mean,sd) :
   "Main driver: convert 'n' into one of x 'bins'."
   breaks = {
       2:                         [0],
@@ -20,22 +20,27 @@ def gbin(n,bins,mean,sd) :
         return i
       before,last = now,i
     return last+1
-  return bin((n - mean) / sd, breaks[bins])
+  return bin((x - mean) / sd, breaks[bins])
 
 class Col:
+  def __init__(i,pos,name):
+    i.has, i.pos, i.name = None,pos,name
+  def discretize(i,x):
+    return i.has.discretize(x) if x is not THE.ignore else x
   def adds(i,lst,f):
     [i.add(x,f) for x in lst]
     return i
   def add(i,x,f):
     if x is not "?":
-      i.n += 1
-      x = f(x)
-      i.add1(x)
-      return x
+      i.has  = Num() if Num.isa(x) else Sym()
+      i.has.n = i.has.n + 1
+      x = f(i.ready(x))
+      i.has.add1(x)
+    return x
       
 class Sym:
   def __init__(i,inits=[]):
-    i.fromString = lambda z:z
+    i.ready = lambda z:z
     i.most,i.mode, i.counts = 0,None,{}
     [i.add1(x) for x in inits]
   def add1(i,x):
@@ -43,6 +48,7 @@ class Sym:
     if m > i.most:
       i.most,i.mode = m,x
   def norm(i,x): return x
+  def discretize(i,x): return x
 
 class Num(Col):
   bins= THE.bins
@@ -54,9 +60,11 @@ class Num(Col):
       except: x,Sym
   def __init__(i,inits=[],ako=float):
     i.n = i.m2 = i.mu = 0.0
-    i.fromString = ako
+    i.ready = ako
     [i.add(x) for x in inits]
-  def s(i): 
+  def discretize(i,x):
+    return gbin(x,Num.bins,i.mu,i.sd()) 
+  def sd(i): 
     return (i.m2/(i.n - 1))**0.5
   def addi1(i,x):
     delta  = x - i.mu

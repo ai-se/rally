@@ -14,17 +14,21 @@ its own corrections. You can keep your sterile truth for yourself."
 
 """,
   # sway
-  help("run unit tests",                          tests     = False),
-  #elp("tiles display width",                    tiles     = 40),
-  #elp("small effect size (Cliff's dela)",       cliff     = [0.147, 0.33, 0.474]),
-  help("keep at most, say, 128 samples",          samples   = [128,256,128,512,1024]),
-  help("y-axis bins",                             bins      = [5,2,3,4,6,7,8,9,10]),
-  help("in pretty print, round numbers",          round     = 3),
-  help("random number seed",                      seed      = 61409389),
-  help("ignore cells, cols characters",           ignore    = "?"),
-  help("class character",                         klass     = "!"),
-  help("training data (csv format)",              train     = "train.csv"),
-  help("testing data (csv format)",               test      = "test.csv"),
+  help("run unit tests",                   tests   = False),
+  #elp("tiles display width",              tiles   = 40),
+  #elp("small effect size (Cliff's dela)", cliff   = [0.147, 0.33, 0.474]),
+  help("keep at most, say, 128 samples",   samples = [128,256,128,512,1024]),
+  help("y-axis bins",                      bins    = [5,2,3,4,6,7,8,9,10]),
+  help("era size",                         era     = 10),
+  help("in pretty print, round numbers",   round   = 3),
+  help("random number seed",               seed    = 61409389),
+  help("ignore cells, cols characters",    ignore  = "?"),
+  help("class character",                  klass   = "!"),
+  help("repeats",                          repeats = [5,10]),
+  help("n-ways",                           nways   = [3,5,10]),
+  help("training data (csv format)",       train   = "train.csv"),
+  help("testing data (csv format)",        test    = "test.csv"),
+  help("verbose print",                    verbose = True),
   # --------------------------------------------------------------------
   # System
   help("Run some test function, then quit",       run       = "")
@@ -56,9 +60,20 @@ THE = options(*helps())
 
 def ro(x)        : return round(x,THE.round)
 def rseed(s=None): random.seed(s or THE.seed)
+r = random.random
 
 #--------------------------------------------------
+def outln(*l):
+  return out(*l, nl=True)
 
+def out(*l,nl=None):
+  if THE.verbose: 
+    sys.stdout.write(" ".join(l))
+    if nl:
+      sys.stdout.write("\n")
+    sys.stdout.flush()
+
+#--------------------------------------------------
 class unittest:
   PASS=FAIL=0
   @staticmethod
@@ -82,6 +97,25 @@ class unittest:
     return f
  
 ok = unittest.ok
+
+def isa(x,y): return isinstance(x,y)
+
+def kv(d, private="_"):
+  "Print dicts, keys sorted (ignoring 'private' keys)"
+  def _private(key):
+    return key[0] == private
+  def pretty(x):
+    return round(x,THE.round) if isa(x,float) else x
+  return '('+', '.join(['%s: %s' % (k,pretty(d[k]))
+          for k in sorted(d.keys())
+          if not _private(k)]) + ')'
+
+class Pretty(object):
+  def __repr__(i):
+    return i.__class__.__name__ + kv(i.__dict__)
+
+class o(Pretty):
+  def __init__(i, **adds): i.__dict__.update(adds)
 
 def run():
   if THE.run:

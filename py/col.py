@@ -1,6 +1,21 @@
 # /* vim: set tabstop=2 softtabstop=2 shiftwidth=2 expandtab : */
 from lib import *
 
+class Col(Pretty):
+  def __init__(i,pos,name):
+    i.has, i.pos, i.name = None,pos,name
+  def discretize(i,x):
+    return i.has.discretize(x) if x is not THE.ignore else x
+  def adds(i,lst,fun=lambda z:z):
+    [i.add(x,fun) for x in lst]
+    return i
+  def add(i,x,fun=lambda z:z):
+    if x is not "?":
+      i.has = i.has or ako(x)
+      x = fun( i.has.ready(x) )
+      i.has + x
+    return x
+ 
 def gbin(x,bins,mean,sd) :
   "Main driver: convert 'n' into one of x 'bins'."
   breaks = {
@@ -20,59 +35,48 @@ def gbin(x,bins,mean,sd) :
         return i
       before,last = now,i
     return last+1
-  return bin((x - mean) / sd, breaks[bins])
+  z = 10**-32
+  return bin((x - mean) / (sd+z), breaks[bins])
 
-class Col:
-  def __init__(i,pos,name):
-    i.has, i.pos, i.name = None,pos,name
-  def discretize(i,x):
-    return i.has.discretize(x) if x is not THE.ignore else x
-  def adds(i,lst,f):
-    [i.add(x,f) for x in lst]
-    return i
-  def add(i,x,f):
-    if x is not "?":
-      i.has  = Num() if Num.isa(x) else Sym()
-      i.has.n = i.has.n + 1
-      x = f(i.ready(x))
-      i.has.add1(x)
-    return x
-      
-class Sym:
+class Sym(Pretty):
   def __init__(i,inits=[]):
     i.ready = lambda z:z
     i.most,i.mode, i.counts = 0,None,{}
-    [i.add1(x) for x in inits]
-  def add1(i,x):
+    [i + x for x in inits]
+  def __add__(i,x):
+    i.n += 1
     m = i.counts[x] = i.counts.get(x,0) + 1
     if m > i.most:
       i.most,i.mode = m,x
+  def ready(i,x): return x
   def norm(i,x): return x
   def discretize(i,x): return x
 
+def ako(x):
+  try: int(x); return Num()
+  except:
+    try: float(x); return Num()
+    except: return Sym()
+
 class Num(Col):
   bins= THE.bins
-  @staticmethod
-  def isa(x):
-    try: return int(x),Num
-    except:
-      try: return float(x),Num
-      except: x,Sym
   def __init__(i,inits=[],ako=float):
     i.n = i.m2 = i.mu = 0.0
     i.ready = ako
-    [i.add(x) for x in inits]
+    [i + x for x in inits]
+  def ready(i,x): return float(x)
   def discretize(i,x):
     return gbin(x,Num.bins,i.mu,i.sd()) 
   def sd(i): 
     return (i.m2/(i.n - 1))**0.5
-  def addi1(i,x):
+  def __add__(i,x):
+    i.n   += 1
     delta  = x - i.mu
     i.mu  += delta*1.0/i.n
     i.m2  += delta*(x - i.mu)
   def tTestSame(i,j,conf=0.95):
     nom   = abs(i.mu - j.mu)
-    s1,s2 = i.s(), j.s()
+    s1,s2 = i.sd(), j.sd()
     denom = ((s1/i.n + s2/j.n)**0.5) if s1+s2 else 1
     df    = min(i.n - 1, j.n - 1)
     return  criticalValue(df, conf) >= nom/denom
@@ -95,11 +99,9 @@ class Num(Col):
     #-------------------------- 
     return interpolate(df, xs, ys[conf])
   def hedges(i,j,small=0.38):
-    num   = (i.n - 1)*i.s**2 + (j.n - 1)*j.s**2
+    num   = (i.n - 1)*i.sd()**2 + (j.n - 1)*j.sd()**2
     denom = (i.n - 1) + (j.n - 1)
     sp    = ( num / denom )**0.5
     delta = abs(i.mu - j.mu) / sp
     c     = 1 - 3.0 / (4*(i.n + j.n - 2) - 1)
     return delta * c < small
-    
-

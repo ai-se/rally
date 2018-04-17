@@ -5,18 +5,21 @@ from col import *
 
 def same(x): return x
 
-def csv(file):
+def csv(file, doomed = r'([\n\r\t]|#.*)'):
   with open(file) as fs:
     for line in fs:
-      line = re.sub(r'([\n\r\t]|#.*)', "", line)
+      line = re.sub(doomed, "", line)
       row  = [z.strip() for z in line.split(",")]
       if len(row)> 0:
         yield row
 
-def using(src, use = None):
-  for row in src:
-    use = use or [n for n,x in enumerate(row) 
-                  if x[0] is not THE.ignore]
+def using(src, use    = None, 
+               size   = None,
+               ignore = THE.ignore):
+  for m,row in enumerate(src):
+    size = size or len(row)
+    assert len(row)== size, "row %s not of size %s" % (m, size)
+    use = use or [n for n,x in enumerate(row) if x[0] is not ignore]
     yield [row[n] for n in use]
 
 def nways(src,ts):
@@ -66,16 +69,20 @@ class Abcd:
       if actual == i.goal: i.d += 1 
       else: i.c += 1
     else: # then silent
-      if actual == i.goal: i.b += 1
-      else: 
-        i.a += 1
+      if actual == i.goal: i.b += 1 
+      else: i.a += 1
   def report(i):
     z = 10**-32
     a,b,c,d = i.a, i.b, i.c, i.d
-    return o(a=a,b=b,c=c,d=d,
+    pd = d / (b+d + z)
+    pf = c / (a+c + z)
+    return o(a=a, b=b, c=c, d=d,
+             goal = i.goal,
+             n    = a+b+c+d,
+             pd   = pd,
+             pf   = pf,
+             d2h  = ((1 - pd)**2 + (0-pf)**2)**0.5/(2**0.5),
              acc  = (a+d) / (a+b+c+d + z),
-             pd   =     d / (b+d     + z),
-             pf   =     c / (a+c     + z),
              prec =     d / (c+d     + z))
 
 class Bore:
@@ -102,42 +109,58 @@ class Bore:
     return sorted(all, reverse=False)
 
 class Table(Pretty):
-  def __init__(i,n,label=""):
+  def __init__(i,n, label="", names=None, learners=[]):
     i.n,i.label = n,label
     i._setup = False
+    if names: i.header(names)
+    i.learners = [l(i) for l in learners]
   def header(i, names):
     if not i._setup:
       i._setup  = True
       i.setup(names)
+  def clone(i):
+    return Table(i.n, label= i.label, names= i.names)
   def setup(i, names):
-      i.tests   = []
-      i.abcd    = []
-      i.every   = Every(action=i.row)
-      i.names   = names
-      i.cols    = [Col(n,name) for n,name 
-                   in enumerate(i.names)]
-      i.x, i.y  = [], []
-      for n,name in enumerate(names):
-        what  = i.y if name[0] == THE.klass else i.x
-        what += [n]
-  def test(i,  row): pass #out('.'); i.tests += [row]
-  def train(i, row): i.every + row
-  def row(i,m,rows): 
-    if i.n == 0:
-      for row in rows:
-        print([int(x) for x in row])
-        print([col.discretize(cell) for cell,col 
-             in zip(row,i.cols)])
+    i.names  = names
+    i.cols   = [Col(n,name) for n,name in enumerate(i.names)]
+    i.tests  = []
+    i.abcd   = []
+    i.x, i.y = [], []
+    for name,cols in enumerate(names,cols):
+      if name[0] == THE.klass: i.y =  col
+      else: i.x += [cols]
+  def train(i,row): [l.train(row) for l in i.learners]
+  def test(i,row) : [l.test(row)  for l in i.learners]
 
-def file2Tables(f,n):
-  ts = [Table(n,label='[%s] %s ' % (n,f)) 
+# XXXX need a way to talk to N tlearners >>
+
+def file2Tables(f,n,learners=[]):
+  ts = [Table(n,label='[%s] %s ' % (n,f),
+                learners=learners) 
         for n in range(n)] 
   nways( csv(f), ts )
   return ts
 
+class NaiveBayes(Pretty):
+  def __init__(i,t):
+    i.klasses={}
+    i.t = t
+  def train(i,row):
+    k = row[i.t.y.pos] 
+    if k not in i.klasses:
+      i.klasses[k] = i.t.headers()
+    klass = 
+    for col in i.t.x:
+  def test(i,  row): pass #out('.'); i.tests += [row]
+  def train(i, row): 
+    if i.n == 0:
+      print([int(x) for x in row])
+      print([col.discretize(cell) for cell,col 
+             in zip(row,i.cols)])
+
 #for row in ranges(Table(file="../data/china.csv")): print(row)
 rseed()
-file2Tables("../data/china.csv", 3)
+file2Tables("../data/china.csv", 3,[NaiveBayes])
 
 def _abcd1():
   a,b,c="a","b","c"

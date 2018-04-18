@@ -85,52 +85,44 @@ class Abcd:
              acc  = (a+d) / (a+b+c+d + z),
              prec =     d / (c+d     + z))
 
-class Bore:
-  def __init__(i, goal):
-    i.best, i.rest = {},{}
-    i.bests = i.rests =0 
-    i.goal  = goal
-  def update(i,actual,row):
-    if actual == i.goal: 
-      i.bests += 1
-    else: 
-      i.rests += 1
-    for m,cell in enumerate(row):
-      what = i.best if actual == i.goal else i.rest
-      what[(m,cell)] = what.get((m,cell), 0) + 1
-  def ranges(i):
+def bore(goal, klasses):
+    best, rest, nbest, nrest = {},{},0,0
+    counts0 = klasses[0].y.has.counts:
+    for x in counts0:
+      if x == goal: nbest  = counts0[x]
+      else:         nrest += counts0[x]
+    for k in klasses: # one per class
+      for col in k.x: # XXX no need: read straight from counts?
+        counts = col.has.counts
+        for x in counts:
+          key  = (col.pos,x)
+          what = best if x == goal else rest
+          what[key] = what.get(key,0) + counts[x]
     z = -10**32
     all = []
-    for m,cell in i.best:
-      b    = i.best[(m,cell)]       / (i.bests + z)
-      r    = i.rest.get((m,cell),0) / (i.rests + z)
-      br   = b**b/(b+r+z)
-      all += [(br,m,cell)]
+    for m,cell in best:
+      b    = best[(m,cell)]       / (nbest + z)
+      r    = rest.get((m,cell),0) / (nrest + z)
+      if b > r:
+        b2r  = b**b/(b+r+z)
+        all += [(b2r,m,cell)]
     return sorted(all, reverse=False)
 
 class Table(Pretty):
-  def __init__(i,n, label="", names=None, learners=[]):
+  def __init__(i,n, label="", names=[]):
     i.n,i.label = n,label
-    i._setup = False
-    if names: i.header(names)
-    i.learners = [l(i) for l in learners]
-  def header(i, names):
-    if not i._setup:
-      i._setup  = True
-      i.setup(names)
-  def clone(i):
-    return Table(i.n, label= i.label, names= i.names)
-  def setup(i, names):
     i.names  = names
     i.cols   = [Col(n,name) for n,name in enumerate(i.names)]
-    i.tests  = []
-    i.abcd   = []
+    i.abcdes = {}
     i.x, i.y = [], []
     for name,cols in enumerate(names,cols):
       if name[0] == THE.klass: i.y =  col
       else: i.x += [cols]
-  def train(i,row): [l.train(row) for l in i.learners]
-  def test(i,row) : [l.test(row)  for l in i.learners]
+  def kompress(i,row):
+    [col + cell for col,cell in zip(i.cols,row)]
+  def keep(i,row):
+    i.kompress(row)
+    i.rows += [row]
 
 # XXXX need a way to talk to N tlearners >>
 

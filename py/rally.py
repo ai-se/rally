@@ -3,39 +3,56 @@
 from lib import *
 from col import *
 
-def same(x): return x
+def same(*l): return l[0]
 
-def csv(file, doomed = r'([\n\r\t]|#.*)'):
+def csv(file): 
   with open(file) as fs:
     for line in fs:
-      line = re.sub(doomed, "", line)
-      row  = [z.strip() for z in line.split(",")]
-      if len(row)> 0:
-        yield row
+      yield line
 
-def selectCols(i,src, use=None, ignore=THE.ignore):
-  for m,row in enumerate(src):
-    use = use or [n for n,x in enumerate(row) if x[0] is not ignore]
-    yield [row[n] for n in use]
+def dataString(s):
+  for line in s.splitlines():
+    yield line
 
-class rowReader:
-  def __init__(i): i.makes = None
-  def maker(i,x):
+class Chain:
+  def __init__(i,src, end= [(same,same)], steps= [(same,same)]): 
+    i.steps = steps + [same,end]
+    for m,x in enumerate(src):
+      x= i.walk(m,o,x)
+  def walk(i,m,o,x):
+    if m==0: 
+      for start,_ in i.steps: x = start(o,x)
+    else
+      for _,step in i.steps:  
+        x = step(o,x)
+        if x==None: return
+
+def string(o,line, doomed = r'([\n\r\t]|#.*)'):
+  line = re.sub(doomed, "", line)
+  row  = [z.strip() for z in line.split(",")]
+  if len(row)> 0:
+    return row
+
+def use0(o,header):
+  o.use = [n for n,x in enumerate(header) if x[0] is not ignore]
+def use(o,row)
+  return [row[n] for n in o.use]
+
+def make0(o,header):
+  o.makes = [None for _ in header] 
+def make(o,row):
+  def what(i,x):
     try: int(x); return int
     except:
       try: float(x); return float
       except: 
         return lambda z:z
-  def __call__(i,row, ignore=THE.ignore):
-    if i.makes:
-      for m,(make,col) in enumerate(zip(i.makes,cols)):
-        if col is not ignore:
-          if not make:
-            make = i.makes[m] = i.maker(col)
-          row[m] = make(col)
-    else:
-      i.makes = i.makes or [None for _ in cols]
-    return row
+  for m,(make,cell) in enumerate(zip(o.makes,row)):
+    if cell is not ignore:
+      if not make:
+        o.makes[m] = what(cell)
+      row[m] = o.makes[m](cell)
+  return row
   
 def nways(src,ts):
   prob = (len(ts) - 1) / len(ts)

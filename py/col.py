@@ -52,12 +52,6 @@ class Sym(Pretty):
   def norm(i,x): return x
   def discretize(i,x): return x
 
-def ako(x):
-  try: int(x); return Num()
-  except:
-    try: float(x); return Num()
-    except: return Sym()
-
 class Num(Col):
   bins= THE.bins
   def __init__(i,inits=[],ako=float):

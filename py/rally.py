@@ -13,15 +13,30 @@ def csv(file, doomed = r'([\n\r\t]|#.*)'):
       if len(row)> 0:
         yield row
 
-def using(src, use    = None, 
-               size   = None,
-               ignore = THE.ignore):
+def selectCols(i,src, use=None, ignore=THE.ignore):
   for m,row in enumerate(src):
-    size = size or len(row)
-    assert len(row)== size, "row %s not of size %s" % (m, size)
     use = use or [n for n,x in enumerate(row) if x[0] is not ignore]
     yield [row[n] for n in use]
 
+class rowReader:
+  def __init__(i): i.makes = None
+  def maker(i,x):
+    try: int(x); return int
+    except:
+      try: float(x); return float
+      except: 
+        return lambda z:z
+  def __call__(i,row, ignore=THE.ignore):
+    if i.makes:
+      for m,(make,col) in enumerate(zip(i.makes,cols)):
+        if col is not ignore:
+          if not make:
+            make = i.makes[m] = i.maker(col)
+          row[m] = make(col)
+    else:
+      i.makes = i.makes or [None for _ in cols]
+    return row
+  
 def nways(src,ts):
   prob = (len(ts) - 1) / len(ts)
   for m,row in enumerate(using(src)):
@@ -59,21 +74,16 @@ def watch(pred, actual, row, goals, bores=None, abcds=None):
 
 class Abcd:
   def __init__(i, goal):
-    i.goal = goal
-    i.a,i.b,i.c,i.d = 0,0,0,0
+    i.goal,i.a,i.b,i.c,i.d = goal,0,0,0,0
   def update(i, pred, actual):
-    """    | false | true
-    silent |   a   |  b
-      loud |   c   |  d   """
     if pred == i.goal: # then loud
       if actual == i.goal: i.d += 1 
       else: i.c += 1
     else: # then silent
       if actual == i.goal: i.b += 1 
       else: i.a += 1
-  def report(i):
-    z = 10**-32
-    a,b,c,d = i.a, i.b, i.c, i.d
+  def report(i): 
+    a,b,c,d,z = i.a, i.b, i.c, i.d, 10**-32
     pd = d / (b+d + z)
     pf = c / (a+c + z)
     return o(a=a, b=b, c=c, d=d,

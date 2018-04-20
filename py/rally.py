@@ -14,18 +14,13 @@ def dataString(s):
   for line in s.splitlines():
     yield line
 
-class Chain:
-  def __init__(i,src, end= [(same,same)], steps= [(same,same)]): 
-    i.steps = steps + [same,end]
-    for m,x in enumerate(src):
-      x= i.walk(m,o,x)
-  def walk(i,m,o,x):
-    if m==0: 
-      for start,_ in i.steps: x = start(o,x)
-    else
-      for _,step in i.steps:  
-        x = step(o,x)
-        if x==None: return
+class chain(src, end= [same], steps= [same]): 
+  steps += [same,end]
+  payload= o()
+  for m,x in enumerate(src):
+    for _,step in i.steps:  
+      x = step(payload,x)
+      if x==None: return
 
 def string(o,line, doomed = r'([\n\r\t]|#.*)'):
   line = re.sub(doomed, "", line)
@@ -33,14 +28,13 @@ def string(o,line, doomed = r'([\n\r\t]|#.*)'):
   if len(row)> 0:
     return row
 
-def use0(o,header):
-  o.use = [n for n,x in enumerate(header) if x[0] is not ignore]
-def use(o,row)
+def use(o,row):
+  o.use = o.use or [n for n,x in enumerate(row) 
+                    if x[0] is not ignore]
   return [row[n] for n in o.use]
 
-def make0(o,header):
-  o.makes = [None for _ in header] 
-def make(o,row):
+def make(o,header):
+  o.makes = o.makes or [None for _ in header] 
   def what(i,x):
     try: int(x); return int
     except:

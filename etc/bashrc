@@ -1,5 +1,7 @@
 # /* vim: set filetype=sh : */
 
+alias ls='ls -G'
+
 here() { cd $1; echo "$PWD"; }
 
 Here=$(pwd)

@@ -14,13 +14,15 @@ def dataString(s):
   for line in s.splitlines():
     yield line
 
-class chain(src, end= [same], steps= [same]): 
+def chain(src, end= [same], steps= [same]): 
   steps += [same,end]
   payload= o()
+  print(steps)
   for m,x in enumerate(src):
-    for _,step in i.steps:  
+    for step in steps:  
+      print('!!!!',step,x)
       x = step(payload,x)
-      if x==None: return
+      if x==None: return None
 
 def string(o,line, doomed = r'([\n\r\t]|#.*)'):
   line = re.sub(doomed, "", line)
@@ -47,7 +49,10 @@ def make(o,header):
         o.makes[m] = what(cell)
       row[m] = o.makes[m](cell)
   return row
-  
+
+tod=chain(csv('../data/china.csv'), steps=[string])
+
+
 def nways(src,ts):
   prob = (len(ts) - 1) / len(ts)
   for m,row in enumerate(using(src)):
@@ -108,7 +113,7 @@ class Abcd:
 
 def bore(goal, klasses):
     best, rest, nbest, nrest = {},{},0,0
-    counts0 = klasses[0].y.has.counts:
+    counts0 = klasses[0].y.has.counts
     for x in counts0:
       if x == goal: nbest  = counts0[x]
       else:         nrest += counts0[x]
@@ -147,9 +152,9 @@ class Table(Pretty):
 
 # XXXX need a way to talk to N tlearners >>
 
+  
 def file2Tables(f,n,learners=[]):
-  ts = [Table(n,label='[%s] %s ' % (n,f),
-                learners=learners) 
+  ts = [Table(n,label='[%s] %s ' % (n,f))
         for n in range(n)] 
   nways( csv(f), ts )
   return ts
@@ -162,8 +167,6 @@ class NaiveBayes(Pretty):
     k = row[i.t.y.pos] 
     if k not in i.klasses:
       i.klasses[k] = i.t.headers()
-    klass = 
-    for col in i.t.x:
   def test(i,  row): pass #out('.'); i.tests += [row]
   def train(i, row): 
     if i.n == 0:
@@ -172,8 +175,8 @@ class NaiveBayes(Pretty):
              in zip(row,i.cols)])
 
 #for row in ranges(Table(file="../data/china.csv")): print(row)
-rseed()
-file2Tables("../data/china.csv", 3,[NaiveBayes])
+#rseed()
+#file2Tables("../data/china.csv", 3,[NaiveBayes])
 
 def _abcd1():
   a,b,c="a","b","c"
